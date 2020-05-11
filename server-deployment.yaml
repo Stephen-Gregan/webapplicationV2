@@ -1,0 +1,242 @@
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   annotations:
+#     kompose.cmd: kompose convert -f docker-compose.yml
+#     kompose.version: 1.21.0 (992df58d8)
+#   creationTimestamp: null
+#   labels:
+#     io.kompose.service: server
+#   name: server
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       io.kompose.service: server
+#   strategy: {}
+#   template:
+#     metadata:
+#       annotations:
+#         kompose.cmd: kompose convert -f docker-compose.yml
+#         kompose.version: 1.21.0 (992df58d8)
+#       creationTimestamp: null
+#       labels:
+#         io.kompose.network/app-network: "true"
+#         io.kompose.service: server
+#     spec:
+#       containers:
+#       - args:
+#         - /node_modules/.bin/nodemon
+#         - server.js
+#         env:
+#         - name: MONGO_DB
+#           valueFrom:
+#             configMapKeyRef:
+#               key: MONGO_DB
+#               name: env
+#         - name: MONGO_HOSTNAME
+#           valueFrom:
+#             configMapKeyRef:
+#               key: MONGO_HOSTNAME
+#               name: env
+#         - name: MONGO_PORT
+#           valueFrom:
+#             configMapKeyRef:
+#               key: MONGO_PORT
+#               name: env
+#         - name: NODE_ENV
+#           value: development
+#         # image: myapp-server
+#         image: 8d51620a/server:latest
+#         imagePullPolicy: ""
+#         name: myapp-node-server
+#         ports:
+#         - containerPort: 5000
+#         resources: {}
+#       restartPolicy: Always
+#       serviceAccountName: ""
+#       volumes: null
+# status: {}
+
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: mongo
+# spec:
+#   selector:
+#     matchLabels:
+#       app: server-instance
+#   replicas: 1
+#   template:
+#     metadata:
+#       labels:
+#         app: server-instance
+#     spec:
+#       containers:
+#         - name: mongo
+#           image: mongo:latest
+#           imagePullPolicy: IfNotPresent
+#           ports:
+#             - containerPort: 27017
+#       #     volumeMounts:
+#       #       - name: data
+#       #         mountPath: /data
+#       #         readOnly: false
+#       # volumes:
+#       #   - name: data
+#       #     persistentVolumeClaim:
+#       #       claimName: mongo-data
+
+# ---
+
+# # apiVersion: v1
+# # kind: PersistentVolumeClaim
+# # metadata:
+# #   name: mongo-data
+# #   labels:
+# #     app: server-instance
+# # spec:
+# #   accessModes:
+# #     - ReadWriteOnce
+# #   resources:
+# #     requests:
+# #       storage: 1Gi
+      
+# ---
+
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: mongo
+#   labels:
+#     app: server-instance
+# spec:
+#   ports:
+#     - name: mongo
+#       port: 27017
+#       targetPort: 27017
+#   type: NodePort
+#   selector:
+#     app: server-instance
+    
+# ---
+
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: server-instance
+# spec:
+#   selector:
+#     matchLabels:
+#       app: server-instance
+#   replicas: 1
+#   template:
+#     metadata:
+#       labels:
+#         app: server-instance
+#     spec:
+#       containers:
+#         - name: server-instance
+#           image: 8d51620a/server:latest
+#           # imagePullPolicy: Never
+#           ports:
+#             - containerPort: 5000
+#       #     volumeMounts:
+#       #       - name: data
+#       #         mountPath: /data
+#       #         readOnly: false
+#       # volumes:
+#       #   - name: data
+#       #     persistentVolumeClaim:
+#       #       claimName: mongo-data
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+spec:
+  selector:
+    matchLabels:
+      app: myapp-node-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: myapp-node-server
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 27017
+          # volumeMounts:
+          #   - name: data
+          #     mountPath: /data
+          #     readOnly: false
+      # volumes:
+      #   - name: data
+      #     persistentVolumeClaim:
+      #       claimName: mongo-data
+
+---
+
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: mongo-data
+#   labels:
+#     app: myapp-node-server
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 1Gi
+      
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  labels:
+    app: myapp-node-server
+spec:
+  ports:
+    - name: mongo
+      port: 27017
+      targetPort: 27017
+  type: NodePort
+  selector:
+    app: myapp-node-server
+    
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-node-server
+spec:
+  selector:
+    matchLabels:
+      app: myapp-node-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: myapp-node-server
+    spec:
+      containers:
+        - name: myapp-node-server
+          image: 8d51620a/server:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5000
+          # volumeMounts:
+          #   - name: data
+          #     mountPath: /data
+          #     readOnly: false
+      # volumes:
+      #   - name: data
+      #     persistentVolumeClaim:
+      #       claimName: mongo-data
